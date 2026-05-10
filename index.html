@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Infratech — Financial Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;900&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:#050810;--surface:#0b1120;--card:#0f1929;
+  --border:rgba(99,179,237,0.12);--text:#e2e8f0;--text-h:#ffffff;--muted:#64748b;
+  --accent:#3b82f6;--accent2:#06b6d4;--accent3:#8b5cf6;
+  --green:#10b981;--red:#f43f5e;--amber:#f59e0b;
+  --orb-op:0.35;--grid-c:rgba(59,130,246,0.03);--th:rgba(59,130,246,0.04);
+}
+[data-theme="light"]{
+  --bg:#f0f4f8;--surface:#ffffff;--card:#ffffff;
+  --border:rgba(59,130,246,0.15);--text:#334155;--text-h:#0f172a;--muted:#94a3b8;
+  --grid-c:rgba(59,130,246,0.04);--orb-op:0.07;--th:rgba(59,130,246,0.04);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Tajawal',sans-serif;min-height:100vh;overflow-x:hidden;transition:background .35s,color .35s;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(var(--grid-c) 1px,transparent 1px),linear-gradient(90deg,var(--grid-c) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0;}
+.orb{position:fixed;border-radius:50%;filter:blur(120px);pointer-events:none;z-index:0;opacity:var(--orb-op);}
+.orb-1{width:600px;height:600px;background:#1e40af;top:-200px;right:-200px;}
+.orb-2{width:400px;height:400px;background:#0e7490;bottom:-100px;left:-100px;}
+.orb-3{width:300px;height:300px;background:#6d28d9;top:50%;left:40%;}
+.wrap{position:relative;z-index:1;max-width:1400px;margin:0 auto;padding:40px 24px;}
+/* HEADER */
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:48px;flex-wrap:wrap;gap:16px;}
+.logo-block{display:flex;align-items:center;gap:16px;}
+.logo-mark{width:52px;height:52px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:14px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:20px;color:#fff;box-shadow:0 0 30px rgba(59,130,246,.4);flex-shrink:0;}
+.logo-text h1{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;letter-spacing:-.5px;color:var(--text-h);}
+.logo-text p{font-size:13px;color:var(--muted);font-weight:300;}
+.header-controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.ctrl-pill{display:flex;align-items:center;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:100px;padding:4px;transition:background .35s,border-color .35s;}
+.ctrl-btn{background:transparent;border:none;cursor:pointer;padding:6px 14px;border-radius:100px;font-size:13px;font-family:'Tajawal',sans-serif;color:var(--muted);transition:all .2s;font-weight:500;white-space:nowrap;}
+.ctrl-btn.active{background:var(--accent);color:#fff;box-shadow:0 0 14px rgba(59,130,246,.35);}
+.hbadge{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3);color:var(--green);padding:6px 16px;border-radius:100px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px;}
+.hbadge::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.8);}}
+/* SECTION */
+.sec-title{font-family:'Syne',sans-serif;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin-bottom:20px;font-weight:600;}
+/* KPI HEADER ROW */
+.kpi-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;}
+/* DROPDOWN */
+.dd-wrap{position:relative;display:inline-block;}
+.dd-btn{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px 16px;cursor:pointer;font-size:14px;font-family:'Tajawal',sans-serif;color:var(--text);font-weight:600;transition:all .2s;min-width:130px;justify-content:space-between;}
+.dd-btn:hover{border-color:var(--accent);}
+.dd-btn .arr{font-size:10px;color:var(--muted);transition:transform .2s;}
+.dd-btn.open .arr{transform:rotate(180deg);}
+.dd-menu{position:absolute;top:calc(100% + 6px);right:0;left:0;background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:none;z-index:100;box-shadow:0 20px 40px rgba(0,0,0,.3);}
+[data-theme="light"] .dd-menu{box-shadow:0 20px 40px rgba(0,0,0,.1);}
+.dd-menu.open{display:block;}
+.dd-item{padding:10px 16px;cursor:pointer;font-size:14px;font-weight:500;color:var(--muted);transition:all .15s;display:flex;align-items:center;gap:8px;}
+.dd-item:hover{background:rgba(59,130,246,.08);color:var(--accent);}
+.dd-item.active{color:var(--accent);font-weight:700;}
+.fc-dot{width:6px;height:6px;border-radius:50%;background:var(--accent2);flex-shrink:0;}
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:40px;}
+.kpi-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;position:relative;overflow:hidden;transition:transform .2s,box-shadow .2s,background .35s,border-color .35s;animation:fsu .5s ease both;}
+.kpi-card:hover{transform:translateY(-4px);box-shadow:0 20px 60px rgba(59,130,246,.1);border-color:rgba(99,179,237,.3);}
+.kpi-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:20px 20px 0 0;}
+.kpi-card.blue::after{background:linear-gradient(90deg,var(--accent),var(--accent2));}
+.kpi-card.purple::after{background:linear-gradient(90deg,var(--accent3),#ec4899);}
+.kpi-card.green::after{background:linear-gradient(90deg,var(--green),#06b6d4);}
+.kpi-card.amber::after{background:linear-gradient(90deg,var(--amber),#f97316);}
+.kpi-lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:8px;font-weight:500;}
+.kpi-val{font-family:'Syne',sans-serif;font-size:26px;font-weight:700;color:var(--text-h);margin-bottom:4px;line-height:1;}
+.kpi-sub{font-size:12px;color:var(--muted);}
+.kpi-badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:3px 8px;border-radius:100px;margin-top:10px;font-weight:600;}
+.kpi-badge.up{background:rgba(16,185,129,.15);color:var(--green);}
+.kpi-badge.down{background:rgba(244,63,94,.15);color:var(--red);}
+.kpi-badge.flat{background:rgba(100,116,139,.15);color:var(--muted);}
+/* GROWTH */
+.growth-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:32px;}
+.growth-item{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:18px;text-align:center;transition:all .2s,background .35s;}
+.growth-item:hover{border-color:var(--accent);box-shadow:0 0 20px rgba(59,130,246,.08);}
+.g-yr{font-size:12px;color:var(--muted);margin-bottom:6px;}
+.g-pct{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;margin-bottom:2px;}
+.g-lbl{font-size:11px;color:var(--muted);}
+/* CHARTS */
+.ch-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:28px;}
+.ch-full{grid-column:1/-1;}
+@media(max-width:900px){.ch-grid{grid-template-columns:1fr;}.ch-full{grid-column:auto;}}
+.ch-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:28px;transition:background .35s,border-color .35s;animation:fsu .6s ease both;}
+.ch-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;gap:12px;flex-wrap:wrap;}
+.ch-title{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text-h);margin-bottom:4px;}
+.ch-sub{font-size:12px;color:var(--muted);}
+.ch-toggle{display:flex;gap:6px;flex-wrap:wrap;}
+.tog-btn{background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:5px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-family:'Tajawal',sans-serif;transition:all .2s;}
+.tog-btn.active{background:rgba(59,130,246,.2);border-color:var(--accent);color:var(--accent);}
+/* RATIOS */
+.ratio-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:28px;}
+.ratio-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;transition:background .35s,border-color .35s;animation:fsu .7s ease both;}
+.ratio-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text-h);margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid var(--border);}
+.ratio-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid rgba(128,128,128,.08);font-size:13px;}
+.ratio-row:last-of-type{border-bottom:none;}
+.r-name{color:var(--muted);font-size:12px;}
+.r-val{font-family:'Syne',sans-serif;font-weight:700;font-size:14px;}
+.r-bar{width:100%;height:4px;background:rgba(128,128,128,.15);border-radius:4px;margin-top:4px;overflow:hidden;}
+.r-fill{height:100%;border-radius:4px;transition:width 1s ease;}
+/* TABLE */
+.tbl-scroll{overflow-x:auto;border-radius:12px;}
+.itbl{width:100%;border-collapse:collapse;font-size:13px;}
+.itbl th{text-align:right;padding:10px 14px;color:var(--muted);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;border-bottom:1px solid var(--border);white-space:nowrap;}
+.itbl td{padding:12px 14px;border-bottom:1px solid rgba(128,128,128,.07);white-space:nowrap;}
+.itbl tr:hover td{background:var(--th);}
+.itbl .rt td{font-weight:700;color:var(--text-h);background:rgba(59,130,246,.06);}
+.itbl .rs td{font-weight:600;color:var(--text);}
+.pos{color:var(--green);}.neg2{color:var(--red);}.neu{color:var(--text);}
+.fc-tag{background:rgba(6,182,212,.15);border:1px solid rgba(6,182,212,.3);color:var(--accent2);padding:2px 8px;border-radius:6px;font-size:10px;font-weight:600;letter-spacing:1px;}
+.dy-btn{background:var(--surface);border:1px solid var(--border);color:var(--muted);padding:5px 13px;border-radius:8px;cursor:pointer;font-size:12px;font-family:'Tajawal',sans-serif;transition:all .2s;}
+.dy-btn.active{background:rgba(59,130,246,.2);border-color:var(--accent);color:var(--accent);}
+.dy-wrap{display:flex;gap:6px;flex-wrap:wrap;}
+@keyframes fsu{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+footer{margin-top:60px;text-align:center;font-size:12px;color:var(--muted);padding:24px 0 40px;border-top:1px solid var(--border);}
+[lang="en"]{direction:ltr;}
+[lang="en"] .itbl th{text-align:left;}
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div>
+<div class="wrap">
+
+<header>
+  <div class="logo-block">
+    <div class="logo-mark">IT</div>
+    <div class="logo-text">
+      <h1>Infratech</h1>
+      <p class="i18" data-ar="قائمة الدخل · 2023–2028F" data-en="Income Statement · 2023–2028F">قائمة الدخل · 2023–2028F</p>
+    </div>
+  </div>
+  <div class="header-controls">
+    <div class="ctrl-pill">
+      <button class="ctrl-btn active" id="bAR" onclick="setLang('ar')">عربي</button>
+      <button class="ctrl-btn" id="bEN" onclick="setLang('en')">EN</button>
+    </div>
+    <div class="ctrl-pill">
+      <button class="ctrl-btn active" id="bDk" onclick="setTheme('dark')">🌙 <span class="i18" data-ar="داكن" data-en="Dark">داكن</span></button>
+      <button class="ctrl-btn" id="bLt" onclick="setTheme('light')">☀️ <span class="i18" data-ar="فاتح" data-en="Light">فاتح</span></button>
+    </div>
+    <div class="hbadge"><span class="i18" data-ar="تنبؤات نشطة" data-en="Forecast Active">تنبؤات نشطة</span></div>
+  </div>
+</header>
+
+<!-- KPI -->
+<div class="kpi-hdr">
+  <p class="sec-title i18" data-ar="🔢 مؤشرات الأداء الرئيسية" data-en="🔢 Key Performance Indicators">🔢 مؤشرات الأداء الرئيسية</p>
+  <div class="dd-wrap">
+    <button class="dd-btn" id="ddBtn" onclick="toggleDD()">
+      <span id="ddLbl">2028F</span><span class="arr">▼</span>
+    </button>
+    <div class="dd-menu" id="ddMenu"></div>
+  </div>
+</div>
+<div class="kpi-grid" id="kpiGrid"></div>
+
+<!-- GROWTH -->
+<p class="sec-title i18" data-ar="📈 معدلات نمو الإيرادات" data-en="📈 Revenue Growth Rates">📈 معدلات نمو الإيرادات</p>
+<div class="growth-grid" id="growthGrid"></div>
+
+<!-- CHARTS -->
+<p class="sec-title i18" data-ar="📊 الرسوم البيانية التفاعلية" data-en="📊 Interactive Charts">📊 الرسوم البيانية التفاعلية</p>
+<div class="ch-grid">
+  <div class="ch-card ch-full">
+    <div class="ch-hdr">
+      <div>
+        <div class="ch-title i18" data-ar="الإيرادات والربحية (2023–2028)" data-en="Revenue & Profitability (2023–2028)">الإيرادات والربحية</div>
+        <div class="ch-sub i18" data-ar="مقارنة سنوية · بالريال السعودي" data-en="Annual comparison · SAR">مقارنة سنوية · بالريال السعودي</div>
+      </div>
+      <div class="ch-toggle" id="revTog">
+        <button class="tog-btn active" onclick="switchRevChart('bar',this)" data-ar="أعمدة" data-en="Bar">أعمدة</button>
+        <button class="tog-btn" onclick="switchRevChart('line',this)" data-ar="خطي" data-en="Line">خطي</button>
+      </div>
+    </div>
+    <canvas id="revChart" height="100"></canvas>
+  </div>
+  <div class="ch-card">
+    <div class="ch-hdr">
+      <div>
+        <div class="ch-title i18" data-ar="اتجاهات هوامش الربح" data-en="Profit Margin Trends">اتجاهات هوامش الربح</div>
+        <div class="ch-sub">Gross / EBITDA / Net Margin</div>
+      </div>
+    </div>
+    <canvas id="marginChart" height="200"></canvas>
+  </div>
+  <div class="ch-card">
+    <div class="ch-hdr">
+      <div>
+        <div class="ch-title i18" data-ar="تفاصيل السنة (Waterfall)" data-en="P&L Waterfall">تفاصيل السنة (Waterfall)</div>
+        <div class="ch-sub i18" data-ar="من الإيرادات إلى صافي الربح" data-en="Revenue to Net Profit">من الإيرادات إلى صافي الربح</div>
+      </div>
+      <div class="dy-wrap" id="wfYears"></div>
+    </div>
+    <canvas id="wfChart" height="220"></canvas>
+  </div>
+</div>
+
+<div class="ch-grid" style="margin-bottom:28px;">
+  <div class="ch-card">
+    <div class="ch-hdr">
+      <div>
+        <div class="ch-title i18" data-ar="تكوين التكاليف" data-en="Cost Composition">تكوين التكاليف</div>
+        <div class="ch-sub i18" data-ar="هيكل المصروفات" data-en="Expense Structure">هيكل المصروفات</div>
+      </div>
+      <div class="ch-toggle" id="costTog"></div>
+    </div>
+    <canvas id="costChart" height="240"></canvas>
+  </div>
+  <div class="ch-card">
+    <div class="ch-hdr">
+      <div>
+        <div class="ch-title i18" data-ar="CAGR المؤشرات الرئيسية" data-en="Key Metrics CAGR">CAGR المؤشرات الرئيسية</div>
+        <div class="ch-sub">2023–2028</div>
+      </div>
+    </div>
+    <canvas id="cagrChart" height="240"></canvas>
+  </div>
+</div>
+
+<!-- RATIOS -->
+<p class="sec-title i18" data-ar="⚖️ النسب المالية المبسطة" data-en="⚖️ Financial Ratios">⚖️ النسب المالية المبسطة</p>
+<div class="ratio-grid" id="ratioGrid"></div>
+
+<!-- TABLE -->
+<p class="sec-title i18" data-ar="📋 قائمة الدخل التفصيلية" data-en="📋 Detailed Income Statement">📋 قائمة الدخل التفصيلية</p>
+<div class="ch-card" style="padding:0;overflow:hidden;">
+  <div class="tbl-scroll"><table class="itbl" id="itbl"></table></div>
+</div>
+
+<footer>
+  Infratech Financial Dashboard &middot;
+  <span class="i18" data-ar="جميع الأرقام بالريال السعودي · 2023–2028 (Forecast)" data-en="All figures in SAR · 2023–2028 (Forecast)">جميع الأرقام بالريال السعودي · 2023–2028 (Forecast)</span>
+</footer>
+</div>
+
+<script>
+// ── DATA ──
+const years = ['2023','2024','2025','2026','2027','2028'];
+const D = {
+  revenue:      [110593806,183515339,230276720,291258789,378302392,496992899],
+  cogs:         [85273870, 139590852,172829094,218568162,283853420,372873908],
+  grossProfit:  [25319936, 43924487, 57447626, 72690627, 94448972, 124118991],
+  sga:          [13458697, 25160119, 33177770, 40158599, 47307693, 48256494],
+  ebitda:       [10675115, 16887931, 21842870, 29278825, 42427151, 68276247],
+  da:           [96540,    188298,   303436,   445375,   627033,   875530],
+  ebit:         [10578575, 16699633, 21539434, 28833450, 41800118, 67400717],
+  interest:     [2329130,  4776633,  3891130,  3891130,  3891130,  3891130],
+  pbt:          [8249445,  11923000, 17648304, 24942320, 37908988, 63509587],
+  zakat:        [384434,   656960,   1063423,  1638671,  2518359,  4009116],
+  netProfit:    [7865011,  11266040, 16584881, 23303649, 35390629, 59500471],
+  grossMargin:  [22.9,23.9,24.9,25.0,25.0,25.0],
+  ebitdaMargin: [9.65,9.20,9.49,10.05,11.22,13.74],
+  ebitMargin:   [9.57,9.10,9.35,9.90,11.05,13.56],
+  netMargin:    [7.11,6.14,7.20,8.00,9.36,11.97],
+};
+
+// ── TRANSLATIONS ──
+const TX = {
+  ar:{
+    revenue:'إجمالي الإيرادات',grossProfit:'مجمل الربح',ebitda:'EBITDA',
+    netProfit:'صافي الربح',grossMargin:'هامش المجمل',ebitdaMargin:'هامش EBITDA',
+    ebitMargin:'هامش EBIT',netMargin:'هامش صافي الربح',
+    cogs:'تكلفة البضاعة المباعة',sga:'مصروفات SG&A',
+    da:'D&A',interest:'فوائد',pbt:'ربح قبل الزكاة',zakat:'الزكاة',
+    compTo:'مقارنة بـ',margin:'هامش',stable:'مستقر',strong:'قوي',exceptional:'استثنائي',
+    revCAGR:'CAGR الإيرادات',netCAGR:'CAGR صافي الربح',
+    revGrowth:'نمو الإيرادات',base:'قاعدة',
+    profRat:'💰 نسب الربحية',cagrRat:'📈 معدلات النمو (CAGR)',opEff:'⚙️ كفاءة التشغيل',
+    cogsR:'نسبة COGS/إيرادات',sgaR:'نسبة SG&A/إيرادات',
+    rRev:'الإيرادات',rGross:'مجمل الربح',rEBITDA:'EBITDA',rEBIT:'EBIT',rNet:'صافي الربح',
+    item:'البند',
+    wRev:'الإيرادات',wCogs:'COGS',wGross:'مجمل الربح',wSga:'SG&A',
+    wEbitda:'EBITDA',wDa:'D&A',wIZ:'فوائد+زكاة',wNet:'صافي الربح',
+    cCogs:'COGS المباشر',cOther:'COGS أخرى',cSal:'رواتب',cGA:'G&A',cDA:'D&A',cZk:'زكاة',cNet:'صافي الربح',
+    dsRev:'الإيرادات',dsGross:'مجمل الربح',dsEBITDA:'EBITDA',dsNet:'صافي الربح',
+  },
+  en:{
+    revenue:'Total Revenue',grossProfit:'Gross Profit',ebitda:'EBITDA',
+    netProfit:'Net Profit',grossMargin:'Gross Margin',ebitdaMargin:'EBITDA Margin',
+    ebitMargin:'EBIT Margin',netMargin:'Net Profit Margin',
+    cogs:'Cost of Goods Sold',sga:'SG&A Expenses',
+    da:'D&A',interest:'Interest',pbt:'Profit Before Zakat',zakat:'Zakat',
+    compTo:'vs',margin:'Margin',stable:'Stable',strong:'Strong',exceptional:'Exceptional',
+    revCAGR:'Revenue CAGR',netCAGR:'Net Profit CAGR',
+    revGrowth:'Revenue Growth',base:'Base',
+    profRat:'💰 Profitability Ratios',cagrRat:'📈 CAGR Metrics',opEff:'⚙️ Operational Efficiency',
+    cogsR:'COGS/Revenue',sgaR:'SG&A/Revenue',
+    rRev:'Revenue',rGross:'Gross Profit',rEBITDA:'EBITDA',rEBIT:'EBIT',rNet:'Net Profit',
+    item:'Line Item',
+    wRev:'Revenue',wCogs:'COGS',wGross:'Gross Profit',wSga:'SG&A',
+    wEbitda:'EBITDA',wDa:'D&A',wIZ:'Interest+Zakat',wNet:'Net Profit',
+    cCogs:'Direct COGS',cOther:'Other COGS',cSal:'Salaries',cGA:'G&A',cDA:'D&A',cZk:'Zakat',cNet:'Net Profit',
+    dsRev:'Revenue',dsGross:'Gross Profit',dsEBITDA:'EBITDA',dsNet:'Net Profit',
+  }
+};
+
+// ── STATE ──
+let lang='ar', theme='dark', kpiYr=5, wfYr=0, costYr=0, revType='bar';
+let cRev=null,cMargin=null,cWf=null,cCost=null,cCagr=null;
+
+// ── HELPERS ──
+const t  = k => TX[lang][k]||k;
+const fmt= (n,d=0)=>{if(Math.abs(n)>=1e9)return(n/1e9).toFixed(d||1)+'B';if(Math.abs(n)>=1e6)return(n/1e6).toFixed(d||1)+'M';if(Math.abs(n)>=1e3)return(n/1e3).toFixed(d||0)+'K';return n.toFixed(d);};
+const pct= (v,d=1)=>v.toFixed(d)+'%';
+const gr = (arr,i)=>i===0?null:(arr[i]-arr[i-1])/arr[i-1]*100;
+const cagr=(arr)=>(Math.pow(arr[5]/arr[0],1/5)-1)*100;
+const dk = ()=>theme==='dark';
+const gc = ()=>dk()?'rgba(255,255,255,0.04)':'rgba(0,0,0,0.06)';
+const tc = ()=>dk()?'#64748b':'#94a3b8';
+const tp = ()=>({backgroundColor:dk()?'#0f1929':'#fff',borderColor:dk()?'rgba(99,179,237,.2)':'rgba(59,130,246,.2)',borderWidth:1,titleColor:dk()?'#e2e8f0':'#0f172a',bodyColor:dk()?'#94a3b8':'#64748b'});
+const sc = ()=>({x:{grid:{color:gc()},ticks:{color:tc()}},y:{grid:{color:gc()},ticks:{color:tc()}}});
+const lc = ()=>dk()?'#94a3b8':'#64748b';
+
+// ── THEME ──
+function setTheme(th){
+  theme=th;
+  document.documentElement.setAttribute('data-theme',th);
+  document.getElementById('bDk').classList.toggle('active',th==='dark');
+  document.getElementById('bLt').classList.toggle('active',th==='light');
+  Chart.defaults.color=tc();
+  rebuildAll();
+}
+
+// ── LANG ──
+function setLang(l){
+  lang=l;
+  document.documentElement.lang=l;
+  document.documentElement.dir=l==='ar'?'rtl':'ltr';
+  document.getElementById('bAR').classList.toggle('active',l==='ar');
+  document.getElementById('bEN').classList.toggle('active',l==='en');
+  document.querySelectorAll('.i18').forEach(el=>{const v=el.getAttribute('data-'+l);if(v)el.textContent=v;});
+  document.querySelectorAll('.tog-btn[data-ar]').forEach(el=>{const v=el.getAttribute('data-'+l);if(v)el.textContent=v;});
+  buildDD();buildKPI();buildGrowth();buildWfBtns();buildCostTog();buildRatios();buildTable();rebuildAll();
+}
+
+// ── DROPDOWN ──
+function buildDD(){
+  const m=document.getElementById('ddMenu');
+  m.innerHTML=years.map((y,i)=>`<div class="dd-item ${i===kpiYr?'active':''}" onclick="selectKpiYr(${i})"><span class="fc-dot"></span>${y}F</div>`).join('');
+  document.getElementById('ddLbl').textContent=years[kpiYr]+'F';
+}
+function toggleDD(){
+  document.getElementById('ddBtn').classList.toggle('open');
+  document.getElementById('ddMenu').classList.toggle('open');
+}
+function selectKpiYr(i){
+  kpiYr=i;
+  document.getElementById('ddBtn').classList.remove('open');
+  document.getElementById('ddMenu').classList.remove('open');
+  buildDD();buildKPI();
+}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.dd-wrap')){
+    document.getElementById('ddBtn').classList.remove('open');
+    document.getElementById('ddMenu').classList.remove('open');
+  }
+});
+
+// ── KPI ──
+function buildKPI(){
+  const i=kpiYr, y=years[i];
+  const gf=arr=>{const g=gr(arr,i);return g===null?{badge:t('base'),cls:'flat',arrow:''}:{badge:(g>0?'+':'')+g.toFixed(1)+'%',cls:g>=0?'up':'down',arrow:g>=0?'▲':'▼'};};
+  const prev=i>0?'SAR '+fmt(D.revenue[i-1],1)+' ('+years[i-1]+'F)':'—';
+  const kpis=[
+    {label:t('revenue'),   value:'SAR '+fmt(D.revenue[i],1),   sub:i>0?t('compTo')+' '+prev:y+'F', ...gf(D.revenue),   color:'blue'},
+    {label:t('netProfit'), value:'SAR '+fmt(D.netProfit[i],1), sub:t('margin')+' '+pct(D.netMargin[i]), ...gf(D.netProfit), color:'green'},
+    {label:'EBITDA',       value:'SAR '+fmt(D.ebitda[i],1),    sub:t('margin')+' '+pct(D.ebitdaMargin[i]), ...gf(D.ebitda), color:'purple'},
+    {label:t('grossMargin'),value:pct(D.grossMargin[i]),       sub:y+'F', badge:t('stable'),cls:'flat',arrow:'', color:'amber'},
+    {label:t('revCAGR'),   value:pct(cagr(D.revenue),1),       sub:'2023–2028', badge:t('strong'),cls:'up',arrow:'▲', color:'blue'},
+    {label:t('netCAGR'),   value:pct(cagr(D.netProfit),1),     sub:'2023–2028', badge:t('exceptional'),cls:'up',arrow:'▲', color:'green'},
+  ];
+  document.getElementById('kpiGrid').innerHTML=kpis.map((k,ii)=>`
+  <div class="kpi-card ${k.color}" style="animation-delay:${ii*.07}s">
+    <div class="kpi-lbl">${k.label}</div>
+    <div class="kpi-val">${k.value}</div>
+    <div class="kpi-sub">${k.sub}</div>
+    <div class="kpi-badge ${k.cls}">${k.arrow} ${k.badge}</div>
+  </div>`).join('');
+}
+
+// ── GROWTH ──
+function buildGrowth(){
+  document.getElementById('growthGrid').innerHTML=years.map((y,i)=>{
+    const g=gr(D.revenue,i);
+    const col=g===null?'#64748b':g>50?'#10b981':g>30?'#3b82f6':'#f59e0b';
+    return`<div class="growth-item"><div class="g-yr">${y}${i>0?' vs '+(+y-1):''}</div><div class="g-pct" style="color:${col}">${g===null?t('base'):'+'+(g.toFixed(0))+'%'}</div><div class="g-lbl">${t('revGrowth')}</div></div>`;
+  }).join('');
+}
+
+// ── WATERFALL BTNS ──
+function buildWfBtns(){
+  document.getElementById('wfYears').innerHTML=years.map((y,i)=>`<button class="dy-btn ${i===wfYr?'active':''}" onclick="setWfYr(${i},this)">${y}</button>`).join('');
+}
+function setWfYr(i,btn){
+  wfYr=i;document.querySelectorAll('#wfYears .dy-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');buildWf();
+}
+
+// ── COST TOGGLE ──
+function buildCostTog(){
+  document.getElementById('costTog').innerHTML=years.map((y,i)=>`<button class="tog-btn ${i===costYr?'active':''}" onclick="setCostYr(${i},this)">${y}</button>`).join('');
+}
+function setCostYr(i,btn){
+  costYr=i;document.querySelectorAll('#costTog .tog-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');buildCost();
+}
+
+// ── REBUILD ALL ──
+function rebuildAll(){buildRevChart();buildMargin();buildWf();buildCost();buildCagr();}
+
+// ── REVENUE ──
+function buildRevChart(){
+  if(cRev)cRev.destroy();
+  cRev=new Chart(document.getElementById('revChart'),{
+    type:revType,
+    data:{labels:years,datasets:[
+      {label:t('dsRev'), data:D.revenue.map(v=>v/1e6),backgroundColor:'rgba(59,130,246,.6)',borderColor:'#3b82f6',borderWidth:2,borderRadius:revType==='bar'?8:0,tension:.4,fill:false},
+      {label:t('dsGross'),data:D.grossProfit.map(v=>v/1e6),backgroundColor:'rgba(16,185,129,.5)',borderColor:'#10b981',borderWidth:2,borderRadius:revType==='bar'?8:0,tension:.4,fill:false},
+      {label:t('dsEBITDA'),data:D.ebitda.map(v=>v/1e6),backgroundColor:'rgba(139,92,246,.5)',borderColor:'#8b5cf6',borderWidth:2,borderRadius:revType==='bar'?8:0,tension:.4,fill:false},
+      {label:t('dsNet'),data:D.netProfit.map(v=>v/1e6),backgroundColor:'rgba(245,158,11,.5)',borderColor:'#f59e0b',borderWidth:2,borderRadius:revType==='bar'?8:0,tension:.4,fill:false},
+    ]},
+    options:{responsive:true,plugins:{legend:{labels:{color:lc(),font:{size:12}}},tooltip:{...tp(),callbacks:{label:c=>`${c.dataset.label}: SAR ${c.parsed.y.toFixed(1)}M`}}},
+      scales:{...sc(),y:{...sc().y,ticks:{callback:v=>'SAR '+v+'M',color:tc()}}}}
+  });
+}
+function switchRevChart(type,btn){
+  revType=type;document.querySelectorAll('#revTog .tog-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');buildRevChart();
+}
+
+// ── MARGIN ──
+function buildMargin(){
+  if(cMargin)cMargin.destroy();
+  cMargin=new Chart(document.getElementById('marginChart'),{
+    type:'line',
+    data:{labels:years,datasets:[
+      {label:'Gross Margin',data:D.grossMargin,borderColor:'#10b981',backgroundColor:'rgba(16,185,129,.1)',fill:true,tension:.4,borderWidth:2.5,pointRadius:4},
+      {label:'EBITDA Margin',data:D.ebitdaMargin,borderColor:'#3b82f6',backgroundColor:'rgba(59,130,246,.08)',fill:true,tension:.4,borderWidth:2.5,pointRadius:4},
+      {label:'Net Margin',data:D.netMargin,borderColor:'#f59e0b',backgroundColor:'rgba(245,158,11,.08)',fill:true,tension:.4,borderWidth:2.5,pointRadius:4},
+    ]},
+    options:{responsive:true,plugins:{legend:{labels:{color:lc(),font:{size:12}}},tooltip:{...tp(),callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y.toFixed(2)}%`}}},
+      scales:{...sc(),y:{...sc().y,ticks:{callback:v=>v+'%',color:tc()}}}}
+  });
+}
+
+// ── WATERFALL ──
+function buildWf(){
+  if(cWf)cWf.destroy();
+  const items=[
+    {l:t('wRev'),  v:D.revenue[wfYr],  tp:'pos'},
+    {l:t('wCogs'), v:-D.cogs[wfYr],   tp:'neg'},
+    {l:t('wGross'),v:D.grossProfit[wfYr],tp:'tot'},
+    {l:t('wSga'),  v:-D.sga[wfYr],    tp:'neg'},
+    {l:t('wEbitda'),v:D.ebitda[wfYr], tp:'tot'},
+    {l:t('wDa'),   v:-D.da[wfYr],     tp:'neg'},
+    {l:t('wIZ'),   v:-(D.interest[wfYr]+D.zakat[wfYr]),tp:'neg'},
+    {l:t('wNet'),  v:D.netProfit[wfYr],tp:'tot'},
+  ];
+  const cols=items.map(i=>i.tp==='tot'?'rgba(59,130,246,.75)':i.tp==='pos'?'rgba(16,185,129,.75)':'rgba(244,63,94,.65)');
+  cWf=new Chart(document.getElementById('wfChart'),{
+    type:'bar',
+    data:{labels:items.map(i=>i.l),datasets:[{data:items.map(i=>Math.abs(i.v)/1e6),backgroundColor:cols,borderRadius:8,borderWidth:0}]},
+    options:{responsive:true,plugins:{legend:{display:false},tooltip:{...tp(),callbacks:{label:c=>`SAR ${c.parsed.y.toFixed(2)}M`}}},
+      scales:{...sc(),y:{...sc().y,ticks:{callback:v=>v+'M',color:tc()}}}}
+  });
+}
+
+// ── COST ──
+function buildCost(){
+  if(cCost)cCost.destroy();
+  const tot=D.revenue[costYr];
+  const vals=[D.cogs[costYr]*.999,D.cogs[costYr]*.001,D.sga[costYr]*.75,D.sga[costYr]*.25,D.da[costYr],D.zakat[costYr],D.netProfit[costYr]];
+  cCost=new Chart(document.getElementById('costChart'),{
+    type:'doughnut',
+    data:{labels:[t('cCogs'),t('cOther'),t('cSal'),t('cGA'),t('cDA'),t('cZk'),t('cNet')],
+      datasets:[{data:vals.map(v=>+(v/tot*100).toFixed(2)),backgroundColor:['#1e40af','#2563eb','#0891b2','#0d9488','#7c3aed','#b45309','#16a34a'],borderColor:dk()?'#0f1929':'#fff',borderWidth:3,hoverOffset:8}]},
+    options:{responsive:true,plugins:{legend:{display:true,position:'bottom',labels:{color:lc(),font:{size:11},padding:12}},tooltip:{...tp(),callbacks:{label:c=>`${c.label}: ${c.parsed.toFixed(1)}%`}}}}
+  });
+}
+
+// ── CAGR ──
+function buildCagr(){
+  if(cCagr)cCagr.destroy();
+  const rc=dk()?'rgba(255,255,255,.06)':'rgba(0,0,0,.07)';
+  cCagr=new Chart(document.getElementById('cagrChart'),{
+    type:'radar',
+    data:{labels:[t('rRev'),t('rGross'),t('rEBITDA'),t('rEBIT'),t('rNet')],
+      datasets:[{label:'CAGR 2023–2028',data:[cagr(D.revenue),cagr(D.grossProfit),cagr(D.ebitda),cagr(D.ebit),cagr(D.netProfit)].map(v=>+v.toFixed(1)),backgroundColor:'rgba(59,130,246,.15)',borderColor:'#3b82f6',borderWidth:2,pointBackgroundColor:'#3b82f6',pointRadius:5}]},
+    options:{responsive:true,plugins:{legend:{display:false},tooltip:{...tp(),callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.r.toFixed(1)}%`}}},
+      scales:{r:{grid:{color:rc},angleLines:{color:rc},ticks:{backdropColor:'transparent',color:tc(),font:{size:10}},pointLabels:{color:lc(),font:{size:11}}}}}
+  });
+}
+
+// ── RATIOS ──
+function buildRatios(){
+  const groups=[
+    {title:t('profRat'),rows:[
+      {n:t('grossMargin')+' (2028)',v:pct(D.grossMargin[5]),c:'#10b981',p:D.grossMargin[5]/40*100},
+      {n:'EBITDA Margin (2028)',v:pct(D.ebitdaMargin[5]),c:'#3b82f6',p:D.ebitdaMargin[5]/20*100},
+      {n:'EBIT Margin (2028)',v:pct(D.ebitMargin[5]),c:'#06b6d4',p:D.ebitMargin[5]/20*100},
+      {n:t('netMargin')+' (2028)',v:pct(D.netMargin[5]),c:'#f59e0b',p:D.netMargin[5]/20*100},
+    ]},
+    {title:t('cagrRat'),rows:[
+      {n:t('revCAGR'),v:pct(cagr(D.revenue),1),c:'#10b981',p:Math.min(cagr(D.revenue)/60*100,100)},
+      {n:t('grossProfit')+' CAGR',v:pct(cagr(D.grossProfit),1),c:'#3b82f6',p:Math.min(cagr(D.grossProfit)/80*100,100)},
+      {n:'EBITDA CAGR',v:pct(cagr(D.ebitda),1),c:'#8b5cf6',p:Math.min(cagr(D.ebitda)/100*100,100)},
+      {n:t('netCAGR'),v:pct(cagr(D.netProfit),1),c:'#f59e0b',p:Math.min(cagr(D.netProfit)/60*100,100)},
+    ]},
+    {title:t('opEff'),rows:[
+      {n:t('cogsR')+' 2023',v:pct(D.cogs[0]/D.revenue[0]*100),c:'#f43f5e',p:D.cogs[0]/D.revenue[0]*100},
+      {n:t('cogsR')+' 2028',v:pct(D.cogs[5]/D.revenue[5]*100),c:'#f43f5e',p:D.cogs[5]/D.revenue[5]*100},
+      {n:t('sgaR')+' 2023',v:pct(D.sga[0]/D.revenue[0]*100),c:'#06b6d4',p:D.sga[0]/D.revenue[0]*100},
+      {n:t('sgaR')+' 2028',v:pct(D.sga[5]/D.revenue[5]*100),c:'#06b6d4',p:D.sga[5]/D.revenue[5]*100},
+    ]},
+  ];
+  document.getElementById('ratioGrid').innerHTML=groups.map(g=>`
+  <div class="ratio-card"><div class="ratio-title">${g.title}</div>
+  ${g.rows.map(r=>`<div class="ratio-row"><span class="r-name">${r.n}</span><span class="r-val" style="color:${r.c}">${r.v}</span></div><div class="r-bar"><div class="r-fill" style="width:${Math.min(r.p,100)}%;background:${r.c}"></div></div>`).join('')}
+  </div>`).join('');
+}
+
+// ── TABLE ──
+function buildTable(){
+  const defs=[
+    {k:'revenue',     cls:'rt',format:'sar'},
+    {k:'cogs',        cls:'rs',format:'sn'},
+    {k:'grossProfit', cls:'rt',format:'sar'},
+    {k:'grossMargin', cls:'',  format:'pct'},
+    {k:'sga',         cls:'',  format:'sn'},
+    {k:'ebitda',      cls:'rs',format:'sar'},
+    {k:'ebitdaMargin',cls:'',  format:'pct'},
+    {k:'da',          cls:'',  format:'sn'},
+    {k:'ebit',        cls:'rs',format:'sar'},
+    {k:'interest',    cls:'',  format:'sn'},
+    {k:'pbt',         cls:'rs',format:'sar'},
+    {k:'zakat',       cls:'',  format:'sn'},
+    {k:'netProfit',   cls:'rt',format:'sar'},
+    {k:'netMargin',   cls:'',  format:'pct'},
+  ];
+  let h=`<thead><tr><th>${t('item')}</th>${years.map(y=>`<th>${y} <span class="fc-tag">F</span></th>`).join('')}</tr></thead><tbody>`;
+  defs.forEach(r=>{
+    const isTot=r.cls==='rt';
+    h+=`<tr class="${r.cls}"><td style="font-weight:600;color:${isTot?'var(--text-h)':'var(--text)'};min-width:200px">${t(r.k)}</td>`;
+    D[r.k].forEach(v=>{
+      let d,c;
+      if(r.format==='sar'){d='SAR '+fmt(v,1);c='pos';}
+      else if(r.format==='sn'){d='(SAR '+fmt(v,1)+')';c='neg2';}
+      else{d=pct(v);c=v>20?'pos':v>10?'neu':'neg2';}
+      h+=`<td class="${c}" style="text-align:left;font-family:'Syne',sans-serif;font-size:12px">${d}</td>`;
+    });
+    h+='</tr>';
+  });
+  document.getElementById('itbl').innerHTML=h+'</tbody>';
+}
+
+// ── INIT ──
+Chart.defaults.color='#64748b';
+Chart.defaults.font.family='Tajawal';
+buildDD();buildKPI();buildGrowth();buildWfBtns();buildCostTog();buildRatios();buildTable();rebuildAll();
+</script>
+</body>
+</html>
